@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0b1120">
+    <title>ZenFinance Pro - Exclusive</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; transition: background-color 0.4s ease, color 0.4s ease; padding-bottom: 110px; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+        
+        /* Palet Latar Belakang AMOLED */
+        body { background-color: #f8fafc; color: #1e293b; }
+        .dark { background-color: #0b1120; color: #f8fafc; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Glassmorphism */
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, 0.3); }
+        .dark .glass { background: rgba(11, 17, 32, 0.8); border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+        
+        .chart-container { position: relative; height: 260px; width: 100%; }
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+        
+        /* Toast Notification */
+        #toast { visibility: hidden; min-width: 240px; background-color: #1e293b; color: #fff; text-align: center; border-radius: 20px; padding: 14px 24px; position: fixed; z-index: 100; left: 50%; bottom: 110px; transform: translateX(-50%) scale(0.9); font-size: 13px; font-weight: 700; opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); }
+        #toast.show { visibility: visible; opacity: 1; bottom: 120px; transform: translateX(-50%) scale(1); }
+        .dark #toast { background-color: #f1f5f9; color: #0f172a; }
+
+        /* Gradasi Kartu Premium */
+        .card-cash { background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%); color: #334155; }
+        .dark .card-cash { background: linear-gradient(135deg, #334155 0%, #1e293b 100%); color: #f1f5f9; }
+        .card-ewallet { background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%); color: #ffffff; }
+        .dark .card-ewallet { background: linear-gradient(135deg, #4338ca 0%, #312e81 100%); color: #ffffff; }
+        
+        /* Navigasi Island Style */
+        .nav-island { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; height: 74px; border-radius: 30px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .dark .nav-island { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); }
+    </style>
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5839/5839888.png">
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/5839/5839888.png">
+</head>
+<body id="body">
+
+    <!-- Header Fixed -->
+    <header class="p-5 glass sticky top-0 z-50 flex justify-between items-center">
+        <div>
+            <h1 class="text-xl font-extrabold bg-gradient-to-r from-indigo-600 to-blue-500 dark:from-indigo-400 dark:to-blue-300 bg-clip-text text-transparent">ZenFinance</h1>
+            <p class="text-[9px] font-bold text-slate-500 dark:text-slate-400 tracking-[0.3em] uppercase">Executive Pro</p>
+        </div>
+        <div class="flex gap-2.5">
+            <button onclick="downloadBackup()" title="Backup" class="w-10 h-10 flex items-center justify-center rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 active:scale-90 transition-transform">💾</button>
+            <label class="w-10 h-10 flex items-center justify-center rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 cursor-pointer active:scale-90 transition-transform">
+                📂 <input type="file" class="hidden" accept=".json" onchange="restoreBackup(event)">
+            </label>
+            <button onclick="toggleNightMode()" class="w-10 h-10 flex items-center justify-center rounded-full bg-indigo-50 dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 text-indigo-600 dark:text-yellow-400 active:rotate-12 transition-all">
+                <span id="modeIcon">🌙</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="p-5 max-w-md mx-auto">
+
+        <!-- TAB DASHBOARD -->
+        <div id="tab-dashboard" class="tab-content active fade-in">
+            <!-- Saldo Cards -->
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="card-cash p-5 rounded-[2rem] shadow-sm border border-slate-200/50 dark:border-slate-600/20 relative overflow-hidden">
+                    <div class="absolute -right-6 -bottom-6 w-20 h-20 bg-white/20 rounded-full blur-2xl"></div>
+                    <p class="text-[10px] font-extrabold opacity-70 uppercase tracking-widest mb-1.5">💵 Tunai</p>
+                    <h2 class="text-lg font-bold truncate" id="cashBalance">Rp 0</h2>
+                </div>
+                <div class="card-ewallet p-5 rounded-[2rem] shadow-lg border border-indigo-500/20 relative overflow-hidden">
+                    <div class="absolute -right-6 -bottom-6 w-20 h-20 bg-white/10 rounded-full blur-2xl"></div>
+                    <p class="text-[10px] font-extrabold opacity-80 uppercase tracking-widest mb-1.5">📱 Digital</p>
+                    <h2 class="text-lg font-bold truncate" id="walletBalance">Rp 0</h2>
+                </div>
+            </div>
+
+            <!-- Input Box -->
+            <div class="bg-white dark:bg-slate-800/80 p-6 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-700/50 mb-8 backdrop-blur-md">
+                <p class="text-center text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.3em] mb-2">Input Transaksi</p>
+                <input type="number" inputmode="numeric" id="amount" placeholder="0" class="w-full bg-transparent text-5xl font-extrabold text-center mb-8 outline-none dark:text-white placeholder-slate-200 dark:placeholder-slate-700 tracking-tighter transition-all">
+                
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <select id="walletType" class="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border-none text-[12px] font-bold outline-none cursor-pointer text-slate-600 dark:text-slate-300">
+                        <option value="cash">Dari: Cash</option>
+                        <option value="ewallet">Dari: E-Wallet</option>
+                    </select>
+                    <div class="flex gap-2">
+                        <select id="categorySelect" class="flex-grow p-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border-none text-[12px] font-bold outline-none truncate cursor-pointer text-slate-600 dark:text-slate-300"></select>
+                        <button onclick="addCategoryPrompt()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 rounded-2xl font-bold active:scale-90 transition-all shadow-lg shadow-indigo-500/30">+</button>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <button onclick="addTrx('income')" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-4.5 rounded-[1.5rem] text-[13px] font-black shadow-xl shadow-emerald-500/30 active:scale-95 transition-all">MASUK</button>
+                    <button onclick="addTrx('expense')" class="flex-1 bg-rose-500 hover:bg-rose-600 text-white py-4.5 rounded-[1.5rem] text-[13px] font-black shadow-xl shadow-rose-500/30 active:scale-95 transition-all">KELUAR</button>
+                </div>
+            </div>
+
+            <!-- List Transaksi -->
+            <div class="flex justify-between items-center mb-5 px-3">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Riwayat Terbaru</h3>
+                <select onchange="render()" id="filterWallet" class="bg-transparent text-[10px] font-black text-indigo-500 border-none outline-none cursor-pointer uppercase">
+                    <option value="all">Semua Dompet</option>
+                    <option value="cash">Hanya Cash</option>
+                    <option value="ewallet">Hanya E-Wallet</option>
+                </select>
+            </div>
+            <div id="mainList" class="space-y-4"></div>
+        </div>
+
+        <!-- TAB LAPORAN -->
+        <div id="tab-report" class="tab-content fade-in">
+            <div class="flex justify-between items-center mb-8 px-2">
+                <h3 class="font-extrabold text-2xl text-slate-800 dark:text-white tracking-tight">Laporan</h3>
+                <div class="flex items-center gap-1.5 bg-white dark:bg-slate-800 p-2 rounded-full shadow-sm border border-slate-100 dark:border-slate-700">
+                    <button onclick="changeMonth(-1)" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-full active:scale-90 transition-all"> < </button>
+                    <span id="currentViewDate" class="text-[11px] font-black uppercase w-24 text-center text-slate-700 dark:text-slate-200">Mei 2026</span>
+                    <button onclick="changeMonth(1)" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-full active:scale-90 transition-all"> > </button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-[1.5rem] border border-slate-50 dark:border-slate-700 shadow-sm">
+                    <div class="w-8 h-8 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500 mb-3 font-bold text-lg">↙</div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase mb-1">Masuk</p>
+                    <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 truncate" id="statIncome">Rp 0</p>
+                </div>
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-[1.5rem] border border-slate-50 dark:border-slate-700 shadow-sm">
+                    <div class="w-8 h-8 bg-rose-50 dark:bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-500 mb-3 font-bold text-lg">↗</div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase mb-1">Keluar</p>
+                    <p class="text-sm font-bold text-rose-600 dark:text-rose-400 truncate" id="statExpense">Rp 0</p>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-slate-50 dark:border-slate-700 mb-8 shadow-sm">
+                <div class="chart-container">
+                    <canvas id="expenseChart"></canvas>
+                </div>
+                <div id="noDataInfo" class="hidden text-center py-12 text-slate-400 text-xs font-semibold italic">Belum ada pengeluaran bulan ini.</div>
+            </div>
+
+            <div id="categoryBreakdown" class="space-y-3.5 pb-6"></div>
+        </div>
+
+        <!-- TAB FITUR LAIN -->
+        <div id="tab-others" class="tab-content fade-in">
+            <h3 class="font-extrabold text-2xl mb-8 text-slate-800 dark:text-white tracking-tight px-2">Ekstra</h3>
+            
+            <div class="mb-10">
+                <p class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-4 tracking-[0.3em] pl-3">Mutasi Dana</p>
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-sm">
+                    <div class="flex items-center gap-3 mb-5">
+                        <select id="fromWallet" class="flex-1 p-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border-none text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                            <option value="cash">Dari Cash</option>
+                            <option value="ewallet">Dari E-Wallet</option>
+                        </select>
+                        <span class="text-slate-300 dark:text-slate-600">➜</span>
+                        <select id="toWallet" class="flex-1 p-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border-none text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                            <option value="ewallet">Ke E-Wallet</option>
+                            <option value="cash">Ke Cash</option>
+                        </select>
+                    </div>
+                    <input type="number" id="transferAmount" placeholder="Nominal Transfer Rp" class="w-full p-4 mb-5 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border-none text-xl font-black text-center outline-none text-slate-800 dark:text-white">
+                    <button onclick="processTransfer()" class="w-full bg-slate-900 dark:bg-indigo-600 text-white py-4.5 rounded-[1.5rem] text-[13px] font-black active:scale-95 transition-all shadow-lg">PINDAHKAN SALDO</button>
+                </div>
+            </div>
+            
+            <div>
+                <p class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-4 tracking-[0.3em] pl-3">Hutang & Piutang</p>
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-sm mb-4">
+                    <div class="grid grid-cols-2 gap-3 mb-5">
+                        <input type="text" id="personName" placeholder="Nama" class="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border-none text-[11px] font-bold text-slate-800 dark:text-white placeholder-slate-400">
+                        <input type="number" id="debtAmount" placeholder="Rp" class="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border-none text-[11px] font-bold text-slate-800 dark:text-white placeholder-slate-400">
+                    </div>
+                    <div class="flex gap-4">
+                        <button onclick="addDebt('hutang')" class="flex-1 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 py-4 rounded-2xl text-[10px] font-black uppercase active:scale-95 transition-all">Saya Pinjam</button>
+                        <button onclick="addDebt('piutang')" class="flex-1 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 py-4 rounded-2xl text-[10px] font-black uppercase active:scale-95 transition-all">Dia Pinjam</button>
+                    </div>
+                </div>
+                <div id="debtList" class="space-y-4"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Navigation Floating -->
+    <nav class="nav-island glass flex justify-around items-center px-4 z-50">
+        <button onclick="showTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-1.5 transition-all duration-300">
+            <span class="text-[24px]">💳</span><span class="text-[8px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400">Beranda</span>
+        </button>
+        <button onclick="showTab('report')" id="nav-report" class="flex flex-col items-center gap-1.5 opacity-40 grayscale transition-all duration-300">
+            <span class="text-[24px]">📊</span><span class="text-[8px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400">Analisa</span>
+        </button>
+        <button onclick="showTab('others')" id="nav-others" class="flex flex-col items-center gap-1.5 opacity-40 grayscale transition-all duration-300">
+            <span class="text-[24px]">⚙️</span><span class="text-[8px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400">Fitur</span>
+        </button>
+        <button onclick="clearAll()" class="flex flex-col items-center gap-1.5 opacity-40 transition-all duration-300">
+            <span class="text-[24px]">🗑️</span><span class="text-[8px] font-black uppercase tracking-widest text-rose-500">Reset</span>
+        </button>
+    </nav>
+
+    <!-- Toast Notification -->
+    <div id="toast">Tersimpan!</div>
+
+    <script>
+        const defaultData = { transactions: [], debts: [], categories: ["Makan & Minum", "Transportasi", "Belanja", "Tagihan", "Gaji", "Hobi"] };
+        let data = JSON.parse(localStorage.getItem('zenFinanceVFinal')) || defaultData;
+        let isDark = localStorage.getItem('zenDark') === 'true';
+        let myChart = null;
+        let viewDate = new Date();
+
+        // Palette Fintech Premium
+        const chartColors = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#14b8a6', '#f97316', '#475569'];
+
+        function init() {
+            if (isDark) {
+                document.getElementById('body').classList.add('dark');
+                document.getElementById('modeIcon').innerText = "☀️";
+            }
+            showTab('dashboard');
+            updateCategoryList();
+            render();
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById("toast");
+            t.innerText = msg;
+            t.className = "show";
+            setTimeout(() => { t.className = ""; }, 2500);
+        }
+
+        function formatCatName(n) {
+            return n.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+        }
+
+        function updateCategoryList() {
+            document.getElementById('categorySelect').innerHTML = data.categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+        }
+
+        function addCategoryPrompt() {
+            const n = prompt("Kategori baru:");
+            if (n) {
+                const clean = formatCatName(n);
+                if (!data.categories.includes(clean)) {
+                    data.categories.push(clean);
+                    saveData();
+                    updateCategoryList();
+                    document.getElementById('categorySelect').value = clean;
+                    showToast("Kategori baru siap!");
+                } else {
+                    showToast("Kategori sudah ada");
+                }
+            }
+        }
+
+        function showTab(t) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(el => {
+                el.classList.add('opacity-40', 'grayscale');
+            });
+            
+            const activeNav = document.getElementById('nav-' + t);
+            activeNav.classList.remove('opacity-40', 'grayscale');
+
+            document.getElementById('tab-' + t).classList.add('active');
+            if(t === 'report') renderReport();
+            window.scrollTo(0,0);
+        }
+
+        function changeMonth(offset) {
+            viewDate.setMonth(viewDate.getMonth() + offset);
+            renderReport();
+        }
+
+        function addTrx(type) {
+            const v = parseInt(document.getElementById('amount').value);
+            if (!v || v <= 0) { showToast("Cek nominal!"); return; }
+            data.transactions.push({ id: Date.now(), amt: v, type, wal: document.getElementById('walletType').value, cat: document.getElementById('categorySelect').value, date: Date.now() });
+            document.getElementById('amount').value = '';
+            saveData();
+            render();
+            showToast(type === 'income' ? "Pemasukan dicatat" : "Pengeluaran dicatat");
+        }
+
+        function processTransfer() {
+            const amt = parseInt(document.getElementById('transferAmount').value);
+            const f = document.getElementById('fromWallet').value;
+            const t = document.getElementById('toWallet').value;
+            if (!amt || f === t) { showToast("Input tidak valid"); return; }
+            const now = Date.now();
+            data.transactions.push({ id: now, amt, type: 'expense', wal: f, cat: 'Mutasi Keluar', date: now });
+            data.transactions.push({ id: now+1, amt, type: 'income', wal: t, cat: 'Mutasi Masuk', date: now });
+            document.getElementById('transferAmount').value = '';
+            showTab('dashboard');
+            saveData();
+            render();
+            showToast("Selesai Mutasi");
+        }
+
+        function addDebt(type) {
+            const n = document.getElementById('personName').value;
+            const a = parseInt(document.getElementById('debtAmount').value);
+            if(!n || !a) { showToast("Data kurang!"); return; }
+            data.debts.push({ id: Date.now(), name: n.trim(), amt: a, type, status: 'belum lunas' });
+            document.getElementById('personName').value = '';
+            document.getElementById('debtAmount').value = '';
+            saveData();
+            render();
+            showToast("Buku hutang dicatat");
+        }
+
+        function toggleDebt(id) {
+            const i = data.debts.findIndex(d => d.id === id);
+            data.debts[i].status = data.debts[i].status === 'lunas' ? 'belum lunas' : 'lunas';
+            saveData();
+            render();
+        }
+
+        function deleteTrx(id) { 
+            if(confirm("Hapus data ini?")) { 
+                data.transactions = data.transactions.filter(t => t.id !== id); 
+                saveData(); render(); 
+                if(document.getElementById('tab-report').classList.contains('active')) renderReport(); 
+                showToast("Dihapus");
+            } 
+        }
+        function deleteDebt(id) { 
+            if(confirm("Hapus catatan hutang?")) { 
+                data.debts = data.debts.filter(d => d.id !== id); 
+                saveData(); render(); 
+                showToast("Dihapus");
+            } 
+        }
+
+        function saveData() { localStorage.setItem('zenFinanceVFinal', JSON.stringify(data)); }
+
+        function render() {
+            let c = 0, w = 0;
+            const filter = document.getElementById('filterWallet').value;
+            const list = document.getElementById('mainList');
+            list.innerHTML = '';
+
+            data.transactions.slice().reverse().forEach(t => {
+                const isC = t.wal === 'cash';
+                if(isC) c += (t.type === 'income' ? t.amt : -t.amt);
+                else w += (t.type === 'income' ? t.amt : -t.amt);
+
+                if(filter === 'all' || t.wal === filter) {
+                    const isInc = t.type === 'income';
+                    list.innerHTML += `<div class="bg-white dark:bg-slate-800 p-4.5 rounded-[1.5rem] flex justify-between items-center border border-slate-50 dark:border-slate-700/50 shadow-sm mb-4">
+                        <div class="flex items-center gap-4">
+                            <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-xl shadow-inner ${isInc ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-500'}">
+                                ${isInc ? '↓' : '↑'}
+                            </div>
+                            <div>
+                                <p class="text-[13px] font-extrabold dark:text-white uppercase tracking-tight w-32 truncate">${t.cat}</p>
+                                <p class="text-[9px] text-slate-400 font-bold uppercase mt-1">${t.wal} • ${new Date(t.date).toLocaleDateString('id-ID')}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <p class="font-black text-sm ${isInc ? 'text-emerald-500' : 'text-rose-500'}">${isInc?'+':'-'}${t.amt.toLocaleString('id-ID')}</p>
+                            <button onclick="deleteTrx(${t.id})" class="text-slate-200 hover:text-rose-400 font-bold p-1">✕</button>
+                        </div></div>`;
+                }
+            });
+
+            document.getElementById('debtList').innerHTML = data.debts.map(d => `
+                <div class="p-5 bg-white dark:bg-slate-800 rounded-[1.5rem] flex justify-between items-center border border-slate-50 dark:border-slate-700 shadow-sm ${d.status==='lunas'?'opacity-40 grayscale':''}">
+                    <div onclick="toggleDebt(${d.id})" class="flex-grow cursor-pointer">
+                        <span class="inline-block px-2.5 py-1 rounded-lg text-[8px] font-black uppercase mb-2 ${d.type==='hutang'?'bg-rose-50 text-rose-500':'bg-indigo-50 text-indigo-500'} tracking-widest">${d.type}</span>
+                        <p class="text-[13px] font-extrabold dark:text-white">${d.name} ${d.status==='lunas'?'(LUNAS ✅)':''}</p>
+                        <p class="text-[13px] font-black mt-1 text-slate-800 dark:text-slate-200">Rp ${d.amt.toLocaleString('id-ID')}</p>
+                    </div>
+                    <button onclick="deleteDebt(${d.id})" class="text-slate-200 p-2">✕</button>
+                </div>`).join('');
+
+            document.getElementById('cashBalance').innerText = `Rp ${c.toLocaleString('id-ID')}`;
+            document.getElementById('walletBalance').innerText = `Rp ${w.toLocaleString('id-ID')}`;
+        }
+
+        function renderReport() {
+            const tm = viewDate.getMonth(), ty = viewDate.getFullYear();
+            const bulan = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"];
+            document.getElementById('currentViewDate').innerText = `${bulan[tm]} ${ty}`;
+
+            let tin = 0, tout = 0, catMap = {};
+            data.transactions.forEach(t => {
+                const d = new Date(t.date);
+                if(d.getMonth() === tm && d.getFullYear() === ty) {
+                    if(t.type === 'income') tin += t.amt;
+                    else { tout += t.amt; catMap[t.cat] = (catMap[t.cat] || 0) + t.amt; }
+                }
+            });
+
+            document.getElementById('statIncome').innerText = `Rp ${tin.toLocaleString('id-ID')}`;
+            document.getElementById('statExpense').innerText = `Rp ${tout.toLocaleString('id-ID')}`;
+
+            const lbls = Object.keys(catMap);
+            lbls.sort((a,b) => catMap[b] - catMap[a]);
+            const vals = lbls.map(l => catMap[l]);
+            const bgColors = lbls.map((_, i) => chartColors[i % chartColors.length]);
+
+            if(myChart) myChart.destroy();
+            
+            if(lbls.length > 0) {
+                document.getElementById('expenseChart').classList.remove('hidden');
+                document.getElementById('noDataInfo').classList.add('hidden');
+                
+                myChart = new Chart(document.getElementById('expenseChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: lbls,
+                        datasets: [{
+                            data: vals,
+                            backgroundColor: bgColors,
+                            borderWidth: 6,
+                            borderColor: isDark ? '#1e293b' : '#ffffff',
+                            hoverOffset: 12
+                        }]
+                    },
+                    options: { 
+                        cutout: '75%', 
+                        plugins: { legend: { display: false }, tooltip: { bodyFont: { family: "'Plus Jakarta Sans'" } } }, 
+                        animation: { animateScale: true } 
+                    }
+                });
+
+                document.getElementById('categoryBreakdown').innerHTML = lbls.map((l, i) => {
+                    const p = ((vals[i] / tout) * 100).toFixed(1);
+                    return `<div class="bg-white dark:bg-slate-800 p-4 rounded-[1.5rem] flex justify-between items-center shadow-sm border border-slate-50 dark:border-slate-700/50">
+                        <div class="flex items-center gap-3">
+                            <div class="w-4 h-4 rounded-full shadow-inner" style="background:${bgColors[i]}"></div>
+                            <span class="text-[12px] font-extrabold dark:text-white uppercase tracking-tight w-36 truncate">${l}</span>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[12px] font-black dark:text-white">Rp ${vals[i].toLocaleString('id-ID')}</p>
+                            <p class="text-[9px] text-slate-400 font-bold mt-1">${p}%</p>
+                        </div>
+                    </div>`;
+                }).join('');
+            } else {
+                document.getElementById('expenseChart').classList.add('hidden');
+                document.getElementById('noDataInfo').classList.remove('hidden');
+                document.getElementById('categoryBreakdown').innerHTML = '';
+            }
+        }
+
+        function toggleNightMode() {
+            isDark = !isDark;
+            document.getElementById('body').classList.toggle('dark');
+            localStorage.setItem('zenDark', isDark);
+            document.getElementById('modeIcon').innerText = isDark ? "☀️" : "🌙";
+            if(myChart) renderReport();
+        }
+
+        function downloadBackup() {
+            const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+            const a = document.createElement('a');
+            const date = new Date().toISOString().split('T')[0];
+            a.href = URL.createObjectURL(blob); a.download = `ZenFinance_${date}.json`;
+            a.click();
+            showToast("Backup tersimpan ke HP");
+        }
+
+        function restoreBackup(e) {
+            if(!e.target.files[0]) return;
+            const r = new FileReader();
+            r.onload = (evt) => { 
+                try {
+                    data = JSON.parse(evt.target.result); 
+                    saveData(); render(); showTab('dashboard');
+                    showToast("Pemulihan Berhasil!"); 
+                } catch(err) { showToast("File tidak dikenal"); }
+            };
+            r.readAsText(e.target.files[0]);
+        }
+
+        function clearAll() { 
+            if(confirm("PERINGATAN: Hapus semua data secara permanen?")) { 
+                data = { transactions: [], debts: [], categories: ["Makan & Minum", "Transportasi", "Belanja", "Tagihan", "Gaji", "Hobi"] }; 
+                saveData(); render(); 
+                showToast("Sistem Bersih");
+            } 
+        }
+        
+        init();
+    </script>
+</body>
+</html>
